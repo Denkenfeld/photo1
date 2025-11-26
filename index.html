@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIX | Premium Business Headshots</title>
+    <title>PIX | Modern Business Photography</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -18,443 +18,483 @@
 
     <style>
         :root {
-            --bg-color: #080808;
-            --text-main: #EAEAEA;
-            --accent: #C0A062; /* Premium Bronze/Gold */
+            --bg-color: #ffffff;
+            --text-main: #111111;
+            --accent: #2563EB; /* Electric Blue */
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: 'Manrope', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             overflow-x: hidden;
-            cursor: default; /* MAUS IST JETZT SICHTBAR */
+            cursor: none; /* Custom Cursor */
         }
 
-        h1, h2, h3, .serif {
-            font-family: 'Playfair Display', serif;
+        /* Custom Cursor */
+        .cursor-dot {
+            width: 12px; height: 12px; background: black;
+            position: fixed; border-radius: 50%; pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-circle {
+            width: 50px; height: 50px; border: 1px solid rgba(0,0,0,0.2);
+            position: fixed; border-radius: 50%; pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
+        }
+        /* Cursor Hover State */
+        body.hovering .cursor-circle {
+            width: 80px; height: 80px;
+            background-color: rgba(37, 99, 235, 0.1);
+            border-color: var(--accent);
+            backdrop-filter: blur(2px);
         }
 
-        /* Noise Overlay für den "Film Look" */
-        .noise-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 50;
-            opacity: 0.05;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        /* ThreeJS Canvas (Foreground Interaction) */
+        #hero-canvas {
+            position: absolute;
+            top: 0; right: 0;
+            width: 50vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none; /* Klicks gehen durch */
+        }
+        @media (max-width: 768px) {
+            #hero-canvas { width: 100%; height: 50vh; top: 0; opacity: 0.5; }
         }
 
-        /* Smooth Scroll Setup */
+        /* Smooth Scroll */
         html.lenis { width: auto; min-height: 100%; }
         html.lenis, body.lenis { height: auto; }
 
-        /* Mouse Follower (rein dekorativ, Maus bleibt sichtbar) */
-        .cursor-follower {
-            position: fixed;
-            top: 0; left: 0;
-            width: 40px; height: 40px;
-            border: 1px solid rgba(192, 160, 98, 0.3);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
+        /* Typography Utilities */
+        .display-text { font-weight: 800; letter-spacing: -0.04em; line-height: 0.95; }
+        
+        /* Floating Image Reveal Style */
+        .hover-reveal-img {
+            position: fixed; top: 0; left: 0;
+            width: 300px; height: 400px;
+            object-fit: cover;
             pointer-events: none;
-            z-index: 9999;
-            transition: width 0.2s, height 0.2s, opacity 0.2s;
+            opacity: 0;
+            z-index: 50;
+            transform: translate(-50%, -50%) scale(0.8);
+            border-radius: 12px;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .hover-reveal-img.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1) rotate(-5deg);
         }
 
-        /* ThreeJS Canvas */
-        #webgl-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100vh;
-            z-index: -1;
-            opacity: 0.4; /* Etwas dunkler für besseren Kontrast */
-        }
+        /* Marquee Animation */
+        .marquee-container { overflow: hidden; white-space: nowrap; display: flex; }
+        .marquee-content { display: flex; animation: marquee 20s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-        /* Glassmorphism Classes */
-        .glass {
-            background: rgba(20, 20, 20, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Navigation Pill */
+        .nav-pill {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
         }
-
-        /* 3D Depth Card Effect */
-        .depth-card {
-            transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
-        }
-        .depth-layer {
-            transition: transform 0.1s ease-out;
-        }
-
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .fade-in-up { opacity: 0; transform: translateY(30px); }
     </style>
 </head>
-<body class="antialiased selection:bg-[#C0A062] selection:text-black">
+<body class="antialiased">
 
-    <div class="noise-overlay"></div>
+    <div class="cursor-dot hidden md:block"></div>
+    <div class="cursor-circle hidden md:block"></div>
+    
+    <img src="" id="reveal-image" class="hover-reveal-img shadow-2xl" alt="Preview">
 
-    <div class="cursor-follower hidden md:block"></div>
+    <nav class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] md:w-auto">
+        <div class="nav-pill px-6 py-3 rounded-full flex items-center justify-between gap-8 md:gap-12">
+            <a href="#" class="font-black text-xl tracking-tighter hover:text-blue-600 transition-colors">PIX.</a>
+            
+            <div class="hidden md:flex gap-6 text-sm font-medium text-gray-500">
+                <a href="#services" class="hover:text-black transition-colors magnetic-btn">Leistungen</a>
+                <a href="#portfolio" class="hover:text-black transition-colors magnetic-btn">Portfolio</a>
+                <a href="#about" class="hover:text-black transition-colors magnetic-btn">Studio</a>
+            </div>
 
-    <div id="webgl-container"></div>
-
-    <nav class="fixed top-0 w-full z-40 p-6 md:p-8 flex justify-between items-center mix-blend-difference">
-        <div class="text-3xl font-bold tracking-tighter text-[#EAEAEA]">PIX</div>
-        <div class="hidden md:flex gap-8 text-xs tracking-[0.2em] uppercase opacity-80 font-bold">
-            <a href="#portfolio" class="hover:text-[#C0A062] transition-colors">Portfolio</a>
-            <a href="#about" class="hover:text-[#C0A062] transition-colors">About</a>
-            <a href="#contact" class="hover:text-[#C0A062] transition-colors">Kontakt</a>
+            <button class="bg-black text-white px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wide hover:bg-blue-600 hover:scale-105 transition-all magnetic-btn">
+                Kontakt
+            </button>
         </div>
-        <button class="bg-[#EAEAEA] text-black px-6 py-2 text-xs font-bold uppercase tracking-widest hover:bg-[#C0A062] transition-colors">
-            Book Now
-        </button>
     </nav>
 
-    <section class="min-h-screen w-full flex flex-col justify-center items-start px-6 md:px-24 relative pt-20">
-        <div class="z-10 max-w-4xl">
-            <div class="flex items-center gap-4 mb-6 animate-pulse">
-                <div class="h-[1px] w-12 bg-[#C0A062]"></div>
-                <h2 class="text-[#C0A062] text-xs tracking-[0.4em] uppercase font-bold">Business Photography</h2>
+    <header class="relative w-full h-screen flex items-center px-6 md:px-24 overflow-hidden">
+        <div class="z-10 w-full md:w-1/2 mt-20 md:mt-0">
+            <div class="overflow-hidden mb-4">
+                <p class="text-blue-600 font-bold uppercase tracking-widest text-xs reveal-text translate-y-full">Berlin • München • Hamburg</p>
             </div>
             
-            <h1 class="text-5xl md:text-8xl serif leading-[1.1] mb-8">
-                Der erste Eindruck<br>
-                <span class="italic text-white/50">entscheidet.</span>
+            <h1 class="display-text text-6xl md:text-[7rem] mb-8 leading-none">
+                <div class="overflow-hidden"><span class="block reveal-text translate-y-full">New Era</span></div>
+                <div class="overflow-hidden"><span class="block reveal-text translate-y-full text-gray-300">Business</span></div>
+                <div class="overflow-hidden"><span class="block reveal-text translate-y-full">Portraits.</span></div>
             </h1>
-            
-            <p class="text-sm md:text-base font-light tracking-wide opacity-70 max-w-lg leading-relaxed mb-12 border-l border-[#C0A062] pl-6">
-                Premium Headshots und Bewerbungsfotos für Führungskräfte, Unternehmer und Visionäre. Dein Bild ist deine Marke.
+
+            <p class="text-gray-500 text-lg md:text-xl max-w-md leading-relaxed mb-10 opacity-0 fade-in delay-500">
+                Wir brechen mit dem Standard. Authentische, starke Bilder für Führungskräfte und Bewerber, die auffallen wollen.
             </p>
 
-            <div class="flex gap-4">
-                <button class="border border-white/20 hover:border-[#C0A062] hover:bg-[#C0A062]/10 px-8 py-4 text-xs uppercase tracking-widest transition-all">
-                    Portfolio ansehen
-                </button>
+            <div class="opacity-0 fade-in delay-700">
+                <a href="#portfolio" class="inline-flex items-center gap-2 border-b-2 border-black pb-1 font-bold hover:text-blue-600 hover:border-blue-600 transition-all group">
+                    Arbeiten ansehen
+                    <span class="group-hover:translate-x-2 transition-transform">→</span>
+                </a>
             </div>
         </div>
-    </section>
 
-    <section id="portfolio" class="py-32 px-6 md:px-24 relative z-10">
-        <div class="flex flex-col md:flex-row justify-between items-end mb-20 fade-in-up">
-            <h2 class="text-4xl md:text-6xl serif">Selected Works</h2>
-            <p class="text-xs text-[#C0A062] tracking-widest uppercase mt-4 md:mt-0">Business & Application</p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="group relative aspect-[3/4] overflow-hidden bg-gray-900 fade-in-up">
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale hover:grayscale-0 opacity-90 hover:opacity-100" alt="Business Man">
-                <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent">
-                    <p class="text-[#C0A062] text-xs uppercase tracking-widest mb-1">CEO Portrait</p>
-                    <p class="serif text-xl">Leadership</p>
-                </div>
-            </div>
-             <div class="group relative aspect-[3/4] overflow-hidden bg-gray-900 fade-in-up md:mt-12">
-                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale hover:grayscale-0 opacity-90 hover:opacity-100" alt="Business Woman">
-                <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent">
-                    <p class="text-[#C0A062] text-xs uppercase tracking-widest mb-1">Application</p>
-                    <p class="serif text-xl">Professional</p>
-                </div>
-            </div>
-             <div class="group relative aspect-[3/4] overflow-hidden bg-gray-900 fade-in-up">
-                <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale hover:grayscale-0 opacity-90 hover:opacity-100" alt="Creative Director">
-                <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent">
-                    <p class="text-[#C0A062] text-xs uppercase tracking-widest mb-1">Creative</p>
-                    <p class="serif text-xl">Visionary</p>
-                </div>
-            </div>
-        </div>
-    </section>
+        <div id="hero-canvas"></div>
+    </header>
 
-    <section id="about" class="py-32 px-6 md:px-24 bg-[#0a0a0a] relative overflow-hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-            
-            <div class="z-20 fade-in-up">
-                <h2 class="text-4xl md:text-5xl serif mb-8">Hinter der Kamera</h2>
-                <div class="space-y-6 text-gray-400 font-light leading-relaxed">
-                    <p>
-                        Ein gutes Business-Portrait ist mehr als nur Beleuchtung. Es ist Psychologie. Bei <span class="text-white font-normal">PIX</span> verstehen wir die Sprache des Erfolgs.
-                    </p>
-                    <p>
-                        Wir analysieren deine Branche, deine Position und deine Ziele, um ein Bild zu erschaffen, das nicht nur zeigt wie du aussiehst, sondern wer du bist.
-                    </p>
-                </div>
-                <div class="mt-10 flex gap-12">
-                    <div>
-                        <span class="block text-3xl text-[#C0A062] serif">500+</span>
-                        <span class="text-xs uppercase tracking-widest opacity-50">Clients</span>
-                    </div>
-                    <div>
-                        <span class="block text-3xl text-[#C0A062] serif">10yr</span>
-                        <span class="text-xs uppercase tracking-widest opacity-50">Experience</span>
-                    </div>
-                </div>
+    <div class="py-12 border-y border-gray-100 bg-gray-50 overflow-hidden">
+        <div class="marquee-container">
+            <div class="marquee-content text-4xl md:text-6xl font-black text-gray-200 uppercase tracking-tighter">
+                &nbsp;Headshots • Personal Branding • Corporate Identity • Creative Direction • High End Retouching •&nbsp;
             </div>
-
-            <div class="relative h-[600px] w-full flex items-center justify-center perspective-container fade-in-up" id="about-visual">
-                <div class="absolute w-[80%] h-[90%] border border-[#C0A062]/20 rounded-full depth-layer" data-depth="0.05"></div>
-                
-                <div class="relative w-[70%] h-[80%] overflow-hidden rounded-lg depth-layer shadow-2xl" data-depth="0.15">
-                    <img src="https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover grayscale opacity-80" alt="Photographer">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-[#C0A062]/50 shadow-[0_0_15px_rgba(192,160,98,0.8)] animate-scan"></div>
-                </div>
-                
-                <div class="absolute bottom-20 right-10 glass p-4 rounded depth-layer" data-depth="0.3">
-                    <p class="text-xs font-mono text-[#C0A062]">SCANNING...</p>
-                    <p class="text-xs font-mono text-white/50">ISO 100 • f/1.8</p>
-                </div>
+            <div class="marquee-content text-4xl md:text-6xl font-black text-gray-200 uppercase tracking-tighter" aria-hidden="true">
+                &nbsp;Headshots • Personal Branding • Corporate Identity • Creative Direction • High End Retouching •&nbsp;
             </div>
-        </div>
-    </section>
-
-    <section id="contact" class="py-32 px-6 md:px-24 relative z-10">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-0 border border-white/10">
-            
-            <div class="bg-[#111] h-[400px] md:h-auto relative group overflow-hidden grayscale invert filter contrast-125">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9916256937596!2d2.292292615509614!3d48.85837007928757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66e2964e34e2d%3A0x8ddca9ee380ef7e0!2sEiffel%20Tower!5e0!3m2!1sen!2sus!4v1647529432429!5m2!1sen!2sus" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-                <div class="absolute inset-0 bg-[#C0A062]/10 pointer-events-none group-hover:bg-transparent transition-colors"></div>
-            </div>
-
-            <div class="glass p-12 md:p-16 flex flex-col justify-between">
-                <div>
-                    <h2 class="text-4xl serif mb-8">Kontakt</h2>
-                    <p class="text-xl mb-2 text-[#C0A062]">Studio PIX</p>
-                    <p class="opacity-60 font-light mb-8">Hauptstraße 101<br>10115 Berlin</p>
-                    
-                    <a href="mailto:hello@pix-studio.de" class="text-2xl md:text-3xl font-light hover:text-[#C0A062] transition-colors border-b border-white/20 pb-1 inline-block">
-                        hello@pix-studio.de
-                    </a>
-                </div>
-                
-                <div class="mt-12">
-                    <a href="https://wa.me/4912345678" class="flex items-center gap-4 text-sm tracking-widest uppercase hover:text-[#C0A062] transition-colors">
-                        <span class="w-2 h-2 bg-[#25D366] rounded-full animate-pulse"></span>
-                        WhatsApp Chat starten
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="py-12 text-center text-xs text-white/20 uppercase tracking-widest border-t border-white/5">
-        &copy; 2025 PIX Studio. All rights reserved.
-    </footer>
-
-    <div id="cookie-banner" class="fixed bottom-0 left-0 w-full glass z-[9999] p-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-[#C0A062]/30 translate-y-full transition-transform duration-500 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
-        <div class="text-sm font-light opacity-90 max-w-2xl text-left">
-            <strong class="text-[#C0A062]">Datenschutz.</strong> Wir nutzen Cookies, damit unsere Webseite so scharf aussieht wie deine Fotos. EU Konform.
-        </div>
-        <div class="flex gap-4 w-full md:w-auto">
-            <button onclick="declineCookies()" class="flex-1 md:flex-none text-xs uppercase tracking-widest hover:text-[#C0A062] transition-colors py-3 px-4">Ablehnen</button>
-            <button onclick="acceptCookies()" class="flex-1 md:flex-none bg-[#C0A062] text-black text-xs font-bold uppercase tracking-widest py-3 px-8 hover:bg-white transition-colors">Akzeptieren</button>
         </div>
     </div>
 
-    <style>
-        @keyframes scan {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-        .animate-scan {
-            animation: scan 3s linear infinite;
-        }
-    </style>
+    <section id="portfolio" class="py-32 px-6 md:px-24 bg-white relative z-20">
+        <div class="mb-20">
+            <h2 class="text-sm font-bold text-blue-600 uppercase tracking-widest mb-4">Selected Works</h2>
+            <p class="text-4xl font-bold max-w-2xl">Bewege die Maus über die Projekte.</p>
+        </div>
+
+        <div class="flex flex-col border-t border-gray-200">
+            <a href="#" class="project-item group py-12 border-b border-gray-200 flex justify-between items-center cursor-pointer" 
+               data-img="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop">
+                <h3 class="text-3xl md:text-5xl font-bold group-hover:translate-x-4 transition-transform duration-300 group-hover:text-blue-600">FinTech CEO</h3>
+                <span class="text-gray-400 group-hover:text-black">2024</span>
+            </a>
+            <a href="#" class="project-item group py-12 border-b border-gray-200 flex justify-between items-center cursor-pointer" 
+               data-img="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=800&auto=format&fit=crop">
+                <h3 class="text-3xl md:text-5xl font-bold group-hover:translate-x-4 transition-transform duration-300 group-hover:text-blue-600">Legal Partner</h3>
+                <span class="text-gray-400 group-hover:text-black">2024</span>
+            </a>
+            <a href="#" class="project-item group py-12 border-b border-gray-200 flex justify-between items-center cursor-pointer" 
+               data-img="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800&auto=format&fit=crop">
+                <h3 class="text-3xl md:text-5xl font-bold group-hover:translate-x-4 transition-transform duration-300 group-hover:text-blue-600">Creative Bewerbung</h3>
+                <span class="text-gray-400 group-hover:text-black">2025</span>
+            </a>
+             <a href="#" class="project-item group py-12 border-b border-gray-200 flex justify-between items-center cursor-pointer" 
+             data-img="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop">
+              <h3 class="text-3xl md:text-5xl font-bold group-hover:translate-x-4 transition-transform duration-300 group-hover:text-blue-600">Startup Founder</h3>
+              <span class="text-gray-400 group-hover:text-black">2025</span>
+          </a>
+        </div>
+    </section>
+
+    <section id="about" class="py-32 px-6 md:px-24 bg-gray-50 rounded-3xl mx-4 my-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+            <div>
+                <h2 class="display-text text-5xl mb-8">Kein Standard.<br>Nur Charakter.</h2>
+                <p class="text-gray-600 leading-relaxed mb-8">
+                    PIX steht für moderne Business-Fotografie ohne steife Posen. Wir nutzen natürliches Licht, moderne Architektur und eine entspannte Atmosphäre, um Bilder zu kreieren, die dich kompetent aber nahbar zeigen.
+                </p>
+                <button class="bg-blue-600 text-white px-8 py-4 rounded-full font-bold hover:bg-black transition-colors magnetic-btn">
+                    Studio Tour
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500">
+                    <span class="block text-4xl font-black text-blue-600 mb-2 counter" data-target="850">0</span>
+                    <span class="text-sm font-bold uppercase tracking-widest text-gray-400">Happy Clients</span>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500">
+                    <span class="block text-4xl font-black text-black mb-2">48h</span>
+                    <span class="text-sm font-bold uppercase tracking-widest text-gray-400">Turnaround</span>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-500 col-span-2">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
+                             <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" class="object-cover w-full h-full">
+                        </div>
+                        <div>
+                            <p class="font-bold">Thomas K.</p>
+                            <p class="text-xs text-gray-400">Google Manager</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 italic">"Endlich Bewerbungsfotos, auf denen ich nicht wie ein Versicherungsvertreter aus 1990 aussehe. Absolut High-Level."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-black text-white pt-32 pb-12 px-6 md:px-24 rounded-t-3xl relative overflow-hidden">
+        <div class="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start mb-24">
+            <div>
+                <h2 class="display-text text-6xl md:text-8xl mb-8">Let's work.</h2>
+                <a href="mailto:hi@pix-studio.de" class="text-2xl hover:text-blue-500 transition-colors border-b border-gray-800 pb-2">hi@pix-studio.de</a>
+            </div>
+            
+            <div class="mt-12 md:mt-0 flex flex-col gap-4 text-right">
+                <a href="#" class="text-lg font-bold hover:text-blue-500">Instagram</a>
+                <a href="#" class="text-lg font-bold hover:text-blue-500">LinkedIn</a>
+                <a href="#" class="text-lg font-bold hover:text-blue-500">+49 30 1234567</a>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-800 text-gray-500 text-sm">
+            <p>&copy; 2025 PIX Studio. Made in Berlin.</p>
+            <div class="flex gap-6 mt-4 md:mt-0">
+                <a href="#" class="hover:text-white">Impressum</a>
+                <a href="#" class="hover:text-white">Datenschutz</a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="cookie-popup" class="fixed bottom-6 left-6 z-50 bg-white p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] max-w-sm border border-gray-100 transform translate-y-[150%] transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-xl">🍪</div>
+            <div>
+                <h4 class="font-bold text-sm mb-1">Cookies? Nur die Guten.</h4>
+                <p class="text-xs text-gray-500 mb-4 leading-relaxed">Wir nutzen Cookies für die Performance der Website. Keine unnötigen Tracker.</p>
+                <div class="flex gap-2">
+                    <button onclick="acceptCookies()" class="bg-black text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Okay, cool</button>
+                    <button onclick="closeCookies()" class="text-gray-400 text-xs font-bold px-2 py-2 hover:text-black">Nein danke</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // --- 0. DEBUGGING & SETUP ---
-        // For testing: Clear cookie consent so you ALWAYS see the popup on reload
-        // Remove this line when you go live!
-        localStorage.removeItem('cookieConsent'); 
+        // --- SETUP ---
+        // Force cookie popup for demo
+        localStorage.removeItem('cookieConsent');
 
-        // --- 1. THREE.JS BACKGROUND (Abstract Business Flow) ---
-        const initThreeJS = () => {
-            const container = document.getElementById('webgl-container');
+        // --- 1. THREE.JS BRIGHT GLASS OBJECT ---
+        const initThree = () => {
+            const container = document.getElementById('hero-canvas');
             const scene = new THREE.Scene();
             
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // Bright lighting setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const blueLight = new THREE.PointLight(0x2563EB, 2, 50);
+            blueLight.position.set(-5, 0, 5);
+            scene.add(blueLight);
+
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
 
-            // Geometrie: Icosahedron für mehr "Business/Tech" Struktur
-            const geometry = new THREE.IcosahedronGeometry(10, 1);
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0x333333, 
-                wireframe: true,
-                transparent: true,
-                opacity: 0.15
-            });
-            const shape = new THREE.Mesh(geometry, material);
-            scene.add(shape);
-
-            // Lines Particles
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 400;
-            const posArray = new Float32Array(particlesCount * 3);
-            for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 60;
-            }
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.08,
-                color: 0xC0A062,
-                transparent: true,
-                opacity: 0.6
-            });
-            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-            scene.add(particlesMesh);
-
-            camera.position.z = 20;
-
-            let mouseX = 0;
-            let mouseY = 0;
-            
-            // Mouse Listener
-            document.addEventListener('mousemove', (event) => {
-                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            // "Liquid" Shape (Distorted Sphere)
+            const geometry = new THREE.IcosahedronGeometry(2, 4); // High detail
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                metalness: 0.1,
+                roughness: 0.1,
+                transmission: 0.2, // Glass-like
+                thickness: 1.0,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1,
+                wireframe: false
             });
 
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+            camera.position.z = 6;
+
+            // Variables for animation
+            const originalPositions = geometry.attributes.position.array.slice();
+            const clock = new THREE.Clock();
+
+            // Animate Loop
             const animate = () => {
                 requestAnimationFrame(animate);
-                // Langsame Rotation
-                shape.rotation.x += 0.001;
-                shape.rotation.y += 0.001;
-                
-                // Interaktion
-                shape.rotation.x += mouseY * 0.02;
-                shape.rotation.y += mouseX * 0.02;
-                
-                particlesMesh.rotation.y = mouseX * 0.1;
+                const time = clock.getElapsedTime();
+
+                // Gentle Rotation
+                mesh.rotation.x = time * 0.1;
+                mesh.rotation.y = time * 0.15;
+
+                // Vertex Distortion (Liquid Effect)
+                const positionAttribute = geometry.attributes.position;
+                for (let i = 0; i < positionAttribute.count; i++) {
+                    const x = originalPositions[i * 3];
+                    const y = originalPositions[i * 3 + 1];
+                    const z = originalPositions[i * 3 + 2];
+
+                    // Noise-like movement
+                    const distort = Math.sin(x * 2 + time) * Math.cos(y * 1.5 + time) * 0.3;
+                    
+                    positionAttribute.setX(i, x + distort * 0.5);
+                    positionAttribute.setY(i, y + distort * 0.5);
+                    positionAttribute.setZ(i, z + distort * 0.5);
+                }
+                positionAttribute.needsUpdate = true;
+                geometry.computeVertexNormals(); // Keep lighting correct
+
                 renderer.render(scene, camera);
             };
             animate();
 
+            // Resize Handler
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                renderer.setSize(width, height);
+                camera.aspect = width / height;
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
             });
         };
 
-        // --- 2. COOKIE LOGIC (FIXED) ---
-        const initCookieBanner = () => {
-            const banner = document.getElementById('cookie-banner');
-            const consent = localStorage.getItem('cookieConsent');
+        // --- 2. GSAP & INTERACTION ---
+        const initAnimations = () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero Text Reveal
+            gsap.to('.reveal-text', {
+                y: 0,
+                duration: 1.2,
+                stagger: 0.1,
+                ease: "power4.out",
+                delay: 0.2
+            });
+
+            gsap.to('.fade-in', {
+                opacity: 1,
+                duration: 1,
+                stagger: 0.2,
+                ease: "power2.out"
+            });
+
+            // Magnetic Buttons (Hover Effect)
+            const magneticBtns = document.querySelectorAll('.magnetic-btn');
+            magneticBtns.forEach(btn => {
+                btn.addEventListener('mousemove', (e) => {
+                    const rect = btn.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3 });
+                });
+                btn.addEventListener('mouseleave', () => {
+                    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+                });
+            });
+
+            // Project Hover Reveal (The "Bad Ass" Effect)
+            const projects = document.querySelectorAll('.project-item');
+            const revealImg = document.getElementById('reveal-image');
+            const cursorCircle = document.querySelector('.cursor-circle');
+
+            projects.forEach(project => {
+                project.addEventListener('mouseenter', () => {
+                    document.body.classList.add('hovering');
+                    const imgUrl = project.getAttribute('data-img');
+                    revealImg.src = imgUrl;
+                    revealImg.classList.add('active');
+                });
+                
+                project.addEventListener('mouseleave', () => {
+                    document.body.classList.remove('hovering');
+                    revealImg.classList.remove('active');
+                });
+            });
+
+            // Move Image with Cursor
+            document.addEventListener('mousemove', (e) => {
+                if (document.body.classList.contains('hovering')) {
+                    gsap.to(revealImg, {
+                        x: e.clientX,
+                        y: e.clientY,
+                        duration: 0.4,
+                        ease: "power2.out"
+                    });
+                }
+            });
+
+            // Count up Animation
+            ScrollTrigger.create({
+                trigger: "#about",
+                start: "top 70%",
+                onEnter: () => {
+                    const counter = document.querySelector('.counter');
+                    const target = +counter.getAttribute('data-target');
+                    gsap.to(counter, {
+                        innerText: target,
+                        duration: 2,
+                        snap: { innerText: 1 },
+                        ease: "power2.out"
+                    });
+                }
+            });
+        };
+
+        // --- 3. CUSTOM CURSOR ---
+        const initCursor = () => {
+            const dot = document.querySelector('.cursor-dot');
+            const circle = document.querySelector('.cursor-circle');
             
-            if (!consent) {
-                // Delay slightly to ensure smooth entry
+            let mouseX = 0, mouseY = 0;
+            let circleX = 0, circleY = 0;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                // Dot moves instantly
+                gsap.set(dot, { x: mouseX, y: mouseY });
+            });
+
+            // Circle follows smoothly
+            const animateCircle = () => {
+                circleX += (mouseX - circleX) * 0.15;
+                circleY += (mouseY - circleY) * 0.15;
+                gsap.set(circle, { x: circleX, y: circleY });
+                requestAnimationFrame(animateCircle);
+            };
+            animateCircle();
+        };
+
+        // --- 4. COOKIE POPUP (Spring Animation) ---
+        const showCookie = () => {
+            if(!localStorage.getItem('cookieConsent')) {
                 setTimeout(() => {
-                    banner.style.transform = 'translateY(0)';
-                }, 1000);
+                    document.getElementById('cookie-popup').style.transform = 'translateY(0)';
+                }, 1500);
             }
         };
 
         window.acceptCookies = () => {
             localStorage.setItem('cookieConsent', 'true');
-            document.getElementById('cookie-banner').style.transform = 'translateY(100%)';
+            // Animate out
+            gsap.to('#cookie-popup', { y: 100, opacity: 0, duration: 0.5 });
         };
-
-        window.declineCookies = () => {
-            localStorage.setItem('cookieConsent', 'false');
-            document.getElementById('cookie-banner').style.transform = 'translateY(100%)';
-        };
-
-        // --- 3. ABOUT SECTION PARALLAX (3D SIMULATION) ---
-        const initParallax = () => {
-            const container = document.getElementById('about-visual');
-            const layers = document.querySelectorAll('.depth-layer');
-
-            container.addEventListener('mousemove', (e) => {
-                const x = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth - 0.5;
-                const y = (e.clientY - container.getBoundingClientRect().top) / container.offsetHeight - 0.5;
-
-                layers.forEach(layer => {
-                    const depth = layer.getAttribute('data-depth');
-                    const moveX = x * depth * 100; // Multiplier for movement range
-                    const moveY = y * depth * 100;
-                    
-                    // Apply subtle rotation for 3D feel
-                    const rotateY = x * 10; 
-                    const rotateX = -y * 10;
-
-                    layer.style.transform = `translate(${moveX}px, ${moveY}px) rotateY(${rotateY}deg) rotateX(${rotateX}deg)`;
-                });
-            });
-
-            // Reset on mouse leave
-            container.addEventListener('mouseleave', () => {
-                layers.forEach(layer => {
-                    layer.style.transform = `translate(0px, 0px) rotateY(0deg) rotateX(0deg)`;
-                });
-            });
-        };
-
-        // --- 4. GENERAL ANIMATIONS & CURSOR ---
-        const initApp = () => {
-            // Lenis Smooth Scroll
-            const lenis = new Lenis({
-                lerp: 0.1,
-                smooth: true,
-            });
-            function raf(time) {
-                lenis.raf(time);
-                requestAnimationFrame(raf);
-            }
-            requestAnimationFrame(raf);
-
-            // GSAP Fade In
-            gsap.registerPlugin(ScrollTrigger);
-            gsap.utils.toArray('.fade-in-up').forEach(element => {
-                gsap.fromTo(element, 
-                    { opacity: 0, y: 40 },
-                    {
-                        opacity: 1, 
-                        y: 0, 
-                        duration: 0.8,
-                        ease: "power2.out",
-                        scrollTrigger: {
-                            trigger: element,
-                            start: "top 85%",
-                        }
-                    }
-                );
-            });
-
-            // Cursor Follower Logic
-            const follower = document.querySelector('.cursor-follower');
-            let mouseX = 0, mouseY = 0;
-            let followerX = 0, followerY = 0;
-
-            document.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-            });
-
-            // Smooth interpolation loop for cursor
-            const animateCursor = () => {
-                followerX += (mouseX - followerX) * 0.15;
-                followerY += (mouseY - followerY) * 0.15;
-                
-                follower.style.transform = `translate(${followerX - 20}px, ${followerY - 20}px)`; // -20 is half width
-                requestAnimationFrame(animateCursor);
-            };
-            animateCursor();
+        window.closeCookies = () => {
+            gsap.to('#cookie-popup', { y: 100, opacity: 0, duration: 0.5 });
         };
 
         // --- INIT ---
         window.onload = () => {
-            initThreeJS();
-            initCookieBanner();
-            initApp();
-            initParallax();
-        };
+            // Smooth Scroll
+            const lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
 
+            initThree();
+            initAnimations();
+            initCursor();
+            showCookie();
+        };
     </script>
 </body>
 </html>
