@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUMIERÈ | High-End Studio</title>
+    <title>PIX | Premium Business Headshots</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@200;300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -17,256 +18,323 @@
 
     <style>
         :root {
-            --bg-color: #050505;
-            --text-main: #F0F0F0;
-            --accent: #D4AF37; /* Muted Gold */
+            --bg-color: #080808;
+            --text-main: #EAEAEA;
+            --accent: #C0A062; /* Premium Bronze/Gold */
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Manrope', sans-serif;
             overflow-x: hidden;
-            cursor: none; /* Custom Cursor Logic will be added */
+            cursor: default; /* MAUS IST JETZT SICHTBAR */
         }
 
         h1, h2, h3, .serif {
-            font-family: 'Cinzel', serif;
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Noise Overlay für den "Film Look" */
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
         /* Smooth Scroll Setup */
         html.lenis { width: auto; min-height: 100%; }
         html.lenis, body.lenis { height: auto; }
 
-        /* Custom Cursor */
-        .cursor-dot, .cursor-outline {
+        /* Mouse Follower (rein dekorativ, Maus bleibt sichtbar) */
+        .cursor-follower {
             position: fixed;
             top: 0; left: 0;
-            transform: translate(-50%, -50%);
+            width: 40px; height: 40px;
+            border: 1px solid rgba(192, 160, 98, 0.3);
             border-radius: 50%;
-            z-index: 9999;
+            transform: translate(-50%, -50%);
             pointer-events: none;
+            z-index: 9999;
+            transition: width 0.2s, height 0.2s, opacity 0.2s;
         }
-        .cursor-dot { width: 8px; height: 8px; background-color: var(--accent); }
-        .cursor-outline { width: 40px; height: 40px; border: 1px solid rgba(255, 255, 255, 0.2); transition: width 0.2s, height 0.2s; }
 
-        /* ThreeJS Canvas behind everything */
+        /* ThreeJS Canvas */
         #webgl-container {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100vh;
             z-index: -1;
-            opacity: 0.6;
+            opacity: 0.4; /* Etwas dunkler für besseren Kontrast */
         }
 
         /* Glassmorphism Classes */
         .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* Mobile First Utilities */
+        /* 3D Depth Card Effect */
+        .depth-card {
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+        .depth-layer {
+            transition: transform 0.1s ease-out;
+        }
+
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
         .fade-in-up { opacity: 0; transform: translateY(30px); }
     </style>
 </head>
-<body class="antialiased selection:bg-yellow-900 selection:text-white">
+<body class="antialiased selection:bg-[#C0A062] selection:text-black">
 
-    <div class="cursor-dot hidden md:block"></div>
-    <div class="cursor-outline hidden md:block"></div>
+    <div class="noise-overlay"></div>
+
+    <div class="cursor-follower hidden md:block"></div>
 
     <div id="webgl-container"></div>
 
-    <nav class="fixed top-0 w-full z-50 p-6 flex justify-between items-center mix-blend-difference">
-        <div class="text-2xl font-bold tracking-widest serif text-[#F0F0F0]">LUMIERÈ</div>
-        <div class="hidden md:flex gap-8 text-xs tracking-[0.2em] uppercase opacity-70">
-            <a href="#" class="hover:text-[#D4AF37] transition-colors">Portfolio</a>
-            <a href="#" class="hover:text-[#D4AF37] transition-colors">Experience</a>
-            <a href="#" class="hover:text-[#D4AF37] transition-colors">About</a>
+    <nav class="fixed top-0 w-full z-40 p-6 md:p-8 flex justify-between items-center mix-blend-difference">
+        <div class="text-3xl font-bold tracking-tighter text-[#EAEAEA]">PIX</div>
+        <div class="hidden md:flex gap-8 text-xs tracking-[0.2em] uppercase opacity-80 font-bold">
+            <a href="#portfolio" class="hover:text-[#C0A062] transition-colors">Portfolio</a>
+            <a href="#about" class="hover:text-[#C0A062] transition-colors">About</a>
+            <a href="#contact" class="hover:text-[#C0A062] transition-colors">Kontakt</a>
         </div>
-        <div class="md:hidden text-[#F0F0F0]">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line></svg>
-        </div>
+        <button class="bg-[#EAEAEA] text-black px-6 py-2 text-xs font-bold uppercase tracking-widest hover:bg-[#C0A062] transition-colors">
+            Book Now
+        </button>
     </nav>
 
-    <section class="h-screen w-full flex flex-col justify-center items-center text-center px-4 relative">
-        <div class="z-10 mix-blend-exclusion">
-            <h2 class="text-[#D4AF37] text-xs tracking-[0.5em] uppercase mb-4 animate-pulse">Est. 2025</h2>
-            <h1 class="text-6xl md:text-9xl font-light serif tracking-tighter leading-none mb-6 glass p-4 md:p-8 rounded-2xl shadow-2xl border-none">
-                CAPTURE<br><span class="italic font-light opacity-80">ETERNAL</span>
+    <section class="min-h-screen w-full flex flex-col justify-center items-start px-6 md:px-24 relative pt-20">
+        <div class="z-10 max-w-4xl">
+            <div class="flex items-center gap-4 mb-6 animate-pulse">
+                <div class="h-[1px] w-12 bg-[#C0A062]"></div>
+                <h2 class="text-[#C0A062] text-xs tracking-[0.4em] uppercase font-bold">Business Photography</h2>
+            </div>
+            
+            <h1 class="text-5xl md:text-8xl serif leading-[1.1] mb-8">
+                Der erste Eindruck<br>
+                <span class="italic text-white/50">entscheidet.</span>
             </h1>
-            <p class="text-sm font-light tracking-widest uppercase opacity-60 mt-4 max-w-md mx-auto leading-relaxed">
-                Cinematic portraiture for the modern soul.
+            
+            <p class="text-sm md:text-base font-light tracking-wide opacity-70 max-w-lg leading-relaxed mb-12 border-l border-[#C0A062] pl-6">
+                Premium Headshots und Bewerbungsfotos für Führungskräfte, Unternehmer und Visionäre. Dein Bild ist deine Marke.
             </p>
-        </div>
-        
-        <div class="absolute bottom-10 animate-bounce opacity-50">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0F0" stroke-width="1"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
-        </div>
-    </section>
 
-    <section class="py-24 px-4 md:px-12 relative z-10">
-        <div class="flex justify-between items-end mb-16 fade-in-up">
-            <h2 class="text-3xl md:text-5xl serif">Selected Works</h2>
-            <span class="text-xs text-[#D4AF37] tracking-widest uppercase border-b border-[#D4AF37]">View Full Archive</span>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="group relative aspect-[3/4] overflow-hidden rounded-lg fade-in-up glass cursor-pointer">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0" alt="Portrait">
-                <div class="absolute bottom-0 left-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <p class="text-xs uppercase tracking-widest">Editorial</p>
-                    <p class="serif text-xl">The Vogue Series</p>
-                </div>
-            </div>
-             <div class="group relative aspect-[3/4] overflow-hidden rounded-lg fade-in-up glass cursor-pointer mt-0 md:mt-12">
-                <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0" alt="Fashion">
-                <div class="absolute bottom-0 left-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <p class="text-xs uppercase tracking-widest">Fashion</p>
-                    <p class="serif text-xl">Silk & Stone</p>
-                </div>
-            </div>
-             <div class="group relative aspect-[3/4] overflow-hidden rounded-lg fade-in-up glass cursor-pointer">
-                <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0" alt="Male Model">
-                <div class="absolute bottom-0 left-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <p class="text-xs uppercase tracking-widest">B&W</p>
-                    <p class="serif text-xl">Raw Emotion</p>
-                </div>
+            <div class="flex gap-4">
+                <button class="border border-white/20 hover:border-[#C0A062] hover:bg-[#C0A062]/10 px-8 py-4 text-xs uppercase tracking-widest transition-all">
+                    Portfolio ansehen
+                </button>
             </div>
         </div>
     </section>
 
-    <section class="py-24 overflow-hidden relative z-10 bg-[#0a0a0a]">
-        <div class="px-4 md:px-12 mb-10 fade-in-up">
-            <h2 class="text-3xl md:text-5xl serif text-white">The Experience</h2>
+    <section id="portfolio" class="py-32 px-6 md:px-24 relative z-10">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-20 fade-in-up">
+            <h2 class="text-4xl md:text-6xl serif">Selected Works</h2>
+            <p class="text-xs text-[#C0A062] tracking-widest uppercase mt-4 md:mt-0">Business & Application</p>
         </div>
         
-        <div class="flex gap-6 overflow-x-auto px-4 md:px-12 pb-12 hide-scrollbar snap-x snap-mandatory">
-            <div class="min-w-[85vw] md:min-w-[400px] h-[60vh] glass rounded-xl relative p-8 flex flex-col justify-end snap-center border border-white/10 group hover:border-[#D4AF37]/50 transition-colors">
-                <div class="absolute top-8 right-8 text-4xl opacity-20 group-hover:opacity-100 transition-opacity duration-500">01</div>
-                <h3 class="text-2xl serif mb-2">Consultation</h3>
-                <p class="text-sm font-light opacity-60">We begin with coffee and concept. Moodboards, styling, and location scouting.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="group relative aspect-[3/4] overflow-hidden bg-gray-900 fade-in-up">
+                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale hover:grayscale-0 opacity-90 hover:opacity-100" alt="Business Man">
+                <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent">
+                    <p class="text-[#C0A062] text-xs uppercase tracking-widest mb-1">CEO Portrait</p>
+                    <p class="serif text-xl">Leadership</p>
+                </div>
             </div>
-            <div class="min-w-[85vw] md:min-w-[400px] h-[60vh] glass rounded-xl relative p-8 flex flex-col justify-end snap-center border border-white/10 group hover:border-[#D4AF37]/50 transition-colors">
-                <div class="absolute top-8 right-8 text-4xl opacity-20 group-hover:opacity-100 transition-opacity duration-500">02</div>
-                <h3 class="text-2xl serif mb-2">The Shoot</h3>
-                <p class="text-sm font-light opacity-60">Music on, lights dimmed. A relaxed atmosphere to capture your true essence.</p>
+             <div class="group relative aspect-[3/4] overflow-hidden bg-gray-900 fade-in-up md:mt-12">
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale hover:grayscale-0 opacity-90 hover:opacity-100" alt="Business Woman">
+                <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent">
+                    <p class="text-[#C0A062] text-xs uppercase tracking-widest mb-1">Application</p>
+                    <p class="serif text-xl">Professional</p>
+                </div>
             </div>
-            <div class="min-w-[85vw] md:min-w-[400px] h-[60vh] glass rounded-xl relative p-8 flex flex-col justify-end snap-center border border-white/10 group hover:border-[#D4AF37]/50 transition-colors">
-                <div class="absolute top-8 right-8 text-4xl opacity-20 group-hover:opacity-100 transition-opacity duration-500">03</div>
-                <h3 class="text-2xl serif mb-2">Retouching</h3>
-                <p class="text-sm font-light opacity-60">High-end editorial retouching. Skin looks like skin, but perfect.</p>
+             <div class="group relative aspect-[3/4] overflow-hidden bg-gray-900 fade-in-up">
+                <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale hover:grayscale-0 opacity-90 hover:opacity-100" alt="Creative Director">
+                <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent">
+                    <p class="text-[#C0A062] text-xs uppercase tracking-widest mb-1">Creative</p>
+                    <p class="serif text-xl">Visionary</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-auto">
-        <button class="bg-[#D4AF37] text-black font-semibold uppercase tracking-widest text-xs py-4 px-10 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:scale-105 transition-transform duration-300 flex items-center gap-2">
-            <span>Book Now</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-    </div>
+    <section id="about" class="py-32 px-6 md:px-24 bg-[#0a0a0a] relative overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+            
+            <div class="z-20 fade-in-up">
+                <h2 class="text-4xl md:text-5xl serif mb-8">Hinter der Kamera</h2>
+                <div class="space-y-6 text-gray-400 font-light leading-relaxed">
+                    <p>
+                        Ein gutes Business-Portrait ist mehr als nur Beleuchtung. Es ist Psychologie. Bei <span class="text-white font-normal">PIX</span> verstehen wir die Sprache des Erfolgs.
+                    </p>
+                    <p>
+                        Wir analysieren deine Branche, deine Position und deine Ziele, um ein Bild zu erschaffen, das nicht nur zeigt wie du aussiehst, sondern wer du bist.
+                    </p>
+                </div>
+                <div class="mt-10 flex gap-12">
+                    <div>
+                        <span class="block text-3xl text-[#C0A062] serif">500+</span>
+                        <span class="text-xs uppercase tracking-widest opacity-50">Clients</span>
+                    </div>
+                    <div>
+                        <span class="block text-3xl text-[#C0A062] serif">10yr</span>
+                        <span class="text-xs uppercase tracking-widest opacity-50">Experience</span>
+                    </div>
+                </div>
+            </div>
 
-    <footer class="py-24 px-4 border-t border-white/10 text-center relative z-10 bg-black">
-        <h2 class="text-[12vw] serif opacity-10 leading-none select-none">LUMIERÈ</h2>
-        <div class="flex flex-col md:flex-row justify-center gap-8 mt-12 text-sm font-light tracking-widest uppercase opacity-60">
-            <a href="#" class="hover:text-white">Instagram</a>
-            <a href="#" class="hover:text-white">Email</a>
-            <a href="#" class="hover:text-white">Imprint</a>
+            <div class="relative h-[600px] w-full flex items-center justify-center perspective-container fade-in-up" id="about-visual">
+                <div class="absolute w-[80%] h-[90%] border border-[#C0A062]/20 rounded-full depth-layer" data-depth="0.05"></div>
+                
+                <div class="relative w-[70%] h-[80%] overflow-hidden rounded-lg depth-layer shadow-2xl" data-depth="0.15">
+                    <img src="https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover grayscale opacity-80" alt="Photographer">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-[#C0A062]/50 shadow-[0_0_15px_rgba(192,160,98,0.8)] animate-scan"></div>
+                </div>
+                
+                <div class="absolute bottom-20 right-10 glass p-4 rounded depth-layer" data-depth="0.3">
+                    <p class="text-xs font-mono text-[#C0A062]">SCANNING...</p>
+                    <p class="text-xs font-mono text-white/50">ISO 100 • f/1.8</p>
+                </div>
+            </div>
         </div>
+    </section>
+
+    <section id="contact" class="py-32 px-6 md:px-24 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-0 border border-white/10">
+            
+            <div class="bg-[#111] h-[400px] md:h-auto relative group overflow-hidden grayscale invert filter contrast-125">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9916256937596!2d2.292292615509614!3d48.85837007928757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66e2964e34e2d%3A0x8ddca9ee380ef7e0!2sEiffel%20Tower!5e0!3m2!1sen!2sus!4v1647529432429!5m2!1sen!2sus" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                <div class="absolute inset-0 bg-[#C0A062]/10 pointer-events-none group-hover:bg-transparent transition-colors"></div>
+            </div>
+
+            <div class="glass p-12 md:p-16 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-4xl serif mb-8">Kontakt</h2>
+                    <p class="text-xl mb-2 text-[#C0A062]">Studio PIX</p>
+                    <p class="opacity-60 font-light mb-8">Hauptstraße 101<br>10115 Berlin</p>
+                    
+                    <a href="mailto:hello@pix-studio.de" class="text-2xl md:text-3xl font-light hover:text-[#C0A062] transition-colors border-b border-white/20 pb-1 inline-block">
+                        hello@pix-studio.de
+                    </a>
+                </div>
+                
+                <div class="mt-12">
+                    <a href="https://wa.me/4912345678" class="flex items-center gap-4 text-sm tracking-widest uppercase hover:text-[#C0A062] transition-colors">
+                        <span class="w-2 h-2 bg-[#25D366] rounded-full animate-pulse"></span>
+                        WhatsApp Chat starten
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-12 text-center text-xs text-white/20 uppercase tracking-widest border-t border-white/5">
+        &copy; 2025 PIX Studio. All rights reserved.
     </footer>
 
-    <div id="cookie-banner" class="fixed bottom-0 left-0 w-full glass z-[60] p-6 transform translate-y-full transition-transform duration-500 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-[#D4AF37]/20">
-        <div class="text-xs font-light opacity-80 max-w-2xl">
-            <strong class="text-white">Privacy & Art.</strong> We use cookies to ensure the website runs as smoothly as our shutter speed. Conforms to EU GDPR.
+    <div id="cookie-banner" class="fixed bottom-0 left-0 w-full glass z-[9999] p-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-[#C0A062]/30 translate-y-full transition-transform duration-500 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+        <div class="text-sm font-light opacity-90 max-w-2xl text-left">
+            <strong class="text-[#C0A062]">Datenschutz.</strong> Wir nutzen Cookies, damit unsere Webseite so scharf aussieht wie deine Fotos. EU Konform.
         </div>
-        <div class="flex gap-4">
-            <button onclick="declineCookies()" class="text-xs uppercase tracking-widest hover:text-[#D4AF37] transition-colors py-2 px-4">Decline</button>
-            <button onclick="acceptCookies()" class="bg-white/10 hover:bg-white/20 text-white text-xs uppercase tracking-widest py-2 px-6 rounded border border-white/20 transition-all">Accept</button>
+        <div class="flex gap-4 w-full md:w-auto">
+            <button onclick="declineCookies()" class="flex-1 md:flex-none text-xs uppercase tracking-widest hover:text-[#C0A062] transition-colors py-3 px-4">Ablehnen</button>
+            <button onclick="acceptCookies()" class="flex-1 md:flex-none bg-[#C0A062] text-black text-xs font-bold uppercase tracking-widest py-3 px-8 hover:bg-white transition-colors">Akzeptieren</button>
         </div>
     </div>
 
+    <style>
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .animate-scan {
+            animation: scan 3s linear infinite;
+        }
+    </style>
+
     <script>
-        // --- 1. THREE.JS BACKGROUND SETUP ---
+        // --- 0. DEBUGGING & SETUP ---
+        // For testing: Clear cookie consent so you ALWAYS see the popup on reload
+        // Remove this line when you go live!
+        localStorage.removeItem('cookieConsent'); 
+
+        // --- 1. THREE.JS BACKGROUND (Abstract Business Flow) ---
         const initThreeJS = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
             
-            // Fog for depth
-            scene.fog = new THREE.FogExp2(0x050505, 0.002);
-
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Create a complex TorusKnot to simulate abstract art/hair flow
-            const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-            // Wireframe material for that "tech/scan" look
+            // Geometrie: Icosahedron für mehr "Business/Tech" Struktur
+            const geometry = new THREE.IcosahedronGeometry(10, 1);
             const material = new THREE.MeshBasicMaterial({ 
                 color: 0x333333, 
                 wireframe: true,
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.15
             });
-            const torusKnot = new THREE.Mesh(geometry, material);
-            scene.add(torusKnot);
+            const shape = new THREE.Mesh(geometry, material);
+            scene.add(shape);
 
-            // Particles
+            // Lines Particles
             const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 700;
+            const particlesCount = 400;
             const posArray = new Float32Array(particlesCount * 3);
             for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 50;
+                posArray[i] = (Math.random() - 0.5) * 60;
             }
             particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
             const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.05,
-                color: 0xD4AF37,
+                size: 0.08,
+                color: 0xC0A062,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.6
             });
             const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
             scene.add(particlesMesh);
 
-            camera.position.z = 30;
+            camera.position.z = 20;
 
-            // Mouse interaction
             let mouseX = 0;
             let mouseY = 0;
             
+            // Mouse Listener
             document.addEventListener('mousemove', (event) => {
-                mouseX = event.clientX / window.innerWidth - 0.5;
-                mouseY = event.clientY / window.innerHeight - 0.5;
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
             });
 
-            // Animation Loop
             const animate = () => {
                 requestAnimationFrame(animate);
-
-                // Gentle rotation
-                torusKnot.rotation.x += 0.001;
-                torusKnot.rotation.y += 0.002;
+                // Langsame Rotation
+                shape.rotation.x += 0.001;
+                shape.rotation.y += 0.001;
                 
-                // Mouse interaction effect (Parallax)
-                torusKnot.rotation.x += mouseY * 0.05;
-                torusKnot.rotation.y += mouseX * 0.05;
+                // Interaktion
+                shape.rotation.x += mouseY * 0.02;
+                shape.rotation.y += mouseX * 0.02;
                 
-                particlesMesh.rotation.y = -mouseX * 0.2;
-                particlesMesh.rotation.x = -mouseY * 0.2;
-
+                particlesMesh.rotation.y = mouseX * 0.1;
                 renderer.render(scene, camera);
             };
-
             animate();
 
-            // Handle Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -274,79 +342,16 @@
             });
         };
 
-        // --- 2. GSAP ANIMATIONS ---
-        const initAnimations = () => {
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Reveal animations on scroll
-            gsap.utils.toArray('.fade-in-up').forEach(element => {
-                gsap.fromTo(element, 
-                    { opacity: 0, y: 50 },
-                    {
-                        opacity: 1, 
-                        y: 0, 
-                        duration: 1,
-                        ease: "power3.out",
-                        scrollTrigger: {
-                            trigger: element,
-                            start: "top 85%",
-                        }
-                    }
-                );
-            });
-        };
-
-        // --- 3. LENIS SMOOTH SCROLL ---
-        const initSmoothScroll = () => {
-            const lenis = new Lenis({
-                duration: 1.2,
-                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-                direction: 'vertical',
-                gestureDirection: 'vertical',
-                smooth: true,
-                mouseMultiplier: 1,
-                smoothTouch: false,
-                touchMultiplier: 2,
-            });
-
-            function raf(time) {
-                lenis.raf(time);
-                requestAnimationFrame(raf);
-            }
-
-            requestAnimationFrame(raf);
-        };
-
-        // --- 4. CUSTOM CURSOR ---
-        const initCursor = () => {
-            const cursorDot = document.querySelector('.cursor-dot');
-            const cursorOutline = document.querySelector('.cursor-outline');
-
-            window.addEventListener('mousemove', (e) => {
-                const posX = e.clientX;
-                const posY = e.clientY;
-
-                // Dot follows instantly
-                cursorDot.style.left = `${posX}px`;
-                cursorDot.style.top = `${posY}px`;
-
-                // Outline follows with lag via animation
-                cursorOutline.animate({
-                    left: `${posX}px`,
-                    top: `${posY}px`
-                }, { duration: 500, fill: "forwards" });
-            });
-        };
-
-        // --- 5. COOKIE LOGIC ---
-        const checkCookies = () => {
+        // --- 2. COOKIE LOGIC (FIXED) ---
+        const initCookieBanner = () => {
             const banner = document.getElementById('cookie-banner');
             const consent = localStorage.getItem('cookieConsent');
             
             if (!consent) {
+                // Delay slightly to ensure smooth entry
                 setTimeout(() => {
                     banner.style.transform = 'translateY(0)';
-                }, 2000); // Show after 2 seconds
+                }, 1000);
             }
         };
 
@@ -360,14 +365,96 @@
             document.getElementById('cookie-banner').style.transform = 'translateY(100%)';
         };
 
-        // --- INITIALIZATION ---
+        // --- 3. ABOUT SECTION PARALLAX (3D SIMULATION) ---
+        const initParallax = () => {
+            const container = document.getElementById('about-visual');
+            const layers = document.querySelectorAll('.depth-layer');
+
+            container.addEventListener('mousemove', (e) => {
+                const x = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth - 0.5;
+                const y = (e.clientY - container.getBoundingClientRect().top) / container.offsetHeight - 0.5;
+
+                layers.forEach(layer => {
+                    const depth = layer.getAttribute('data-depth');
+                    const moveX = x * depth * 100; // Multiplier for movement range
+                    const moveY = y * depth * 100;
+                    
+                    // Apply subtle rotation for 3D feel
+                    const rotateY = x * 10; 
+                    const rotateX = -y * 10;
+
+                    layer.style.transform = `translate(${moveX}px, ${moveY}px) rotateY(${rotateY}deg) rotateX(${rotateX}deg)`;
+                });
+            });
+
+            // Reset on mouse leave
+            container.addEventListener('mouseleave', () => {
+                layers.forEach(layer => {
+                    layer.style.transform = `translate(0px, 0px) rotateY(0deg) rotateX(0deg)`;
+                });
+            });
+        };
+
+        // --- 4. GENERAL ANIMATIONS & CURSOR ---
+        const initApp = () => {
+            // Lenis Smooth Scroll
+            const lenis = new Lenis({
+                lerp: 0.1,
+                smooth: true,
+            });
+            function raf(time) {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+            requestAnimationFrame(raf);
+
+            // GSAP Fade In
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.utils.toArray('.fade-in-up').forEach(element => {
+                gsap.fromTo(element, 
+                    { opacity: 0, y: 40 },
+                    {
+                        opacity: 1, 
+                        y: 0, 
+                        duration: 0.8,
+                        ease: "power2.out",
+                        scrollTrigger: {
+                            trigger: element,
+                            start: "top 85%",
+                        }
+                    }
+                );
+            });
+
+            // Cursor Follower Logic
+            const follower = document.querySelector('.cursor-follower');
+            let mouseX = 0, mouseY = 0;
+            let followerX = 0, followerY = 0;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            // Smooth interpolation loop for cursor
+            const animateCursor = () => {
+                followerX += (mouseX - followerX) * 0.15;
+                followerY += (mouseY - followerY) * 0.15;
+                
+                follower.style.transform = `translate(${followerX - 20}px, ${followerY - 20}px)`; // -20 is half width
+                requestAnimationFrame(animateCursor);
+            };
+            animateCursor();
+        };
+
+        // --- INIT ---
         window.onload = () => {
             initThreeJS();
-            initAnimations();
-            initSmoothScroll();
-            initCursor();
-            checkCookies();
+            initCookieBanner();
+            initApp();
+            initParallax();
         };
+
     </script>
 </body>
 </html>
